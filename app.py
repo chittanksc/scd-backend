@@ -113,29 +113,44 @@ def me():
 @app.post("/api/upload")
 @auth_required
 def upload():
-    if "image" not in request.files:
-        return jsonify({"error": "No image provided"}), 400
-    file = request.files["image"]
-    if file.filename == "":
-        return jsonify({"error": "Empty filename"}), 400
-    upload_dir = os.path.join(os.path.dirname(__file__), "uploads")
-    filepath = os.path.join(upload_dir, f"{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}_{file.filename}")
-    file.save(filepath)
     try:
-        img = Image.open(filepath).convert("RGB")
-    except Exception:
-        return jsonify({"error": "Invalid image"}), 400
-    model = get_model()
-    label, confidence = predict_image(model, img)
-    try:
-        send_result_email(
-            to_email=request.user.get("email"),
-            subject="Skin Cancer Detection Result",
-            body=f"Prediction: {label}\nConfidence: {confidence:.2%}",
-        )
-    except Exception:
-        pass
-    return jsonify({"prediction": label, "confidence": confidence})
+        if "image" not in request.files:
+            return jsonify({"error": "No image provided"}), 400
+        file = request.files["image"]
+        if file.filename == "":
+            return jsonify({"error": "Empty filename"}), 400
+        upload_dir = os.path.join(os.path.dirname(__file__), "uploads")
+        filepath = os.path.join(upload_dir, f"{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}_{file.filename}")
+        file.save(filepath)
+        try:
+            img = Image.open(filepath).convert("RGB")
+        except Exception as e:
+            print(f"Image open error: {e}")
+            return jsonify({"error": "Invalid image"}), 400
+        
+        print("Loading model...")
+        model = get_model()
+        print(f"Model loaded: {model is not None}")
+        
+        print("Making prediction...")
+        label, confidence = predict_image(model, img)
+        print(f"Prediction: {label}, Confidence: {confidence}")
+        
+        try:
+            send_result_email(
+                to_email=request.user.get("email"),
+                subject="Skin Cancer Detection Result",
+                body=f"Prediction: {label}\nConfidence: {confidence:.2%}",
+            )
+        except Exception as e:
+            print(f"Email error: {e}")
+        
+        return jsonify({"prediction": label, "confidence": confidence})
+    except Exception as e:
+        print(f"Upload error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
