@@ -138,5 +138,25 @@ def upload():
     return jsonify({"prediction": label, "confidence": confidence})
 
 
+@app.get("/api/setup-db")
+def setup_database():
+    """Temporary endpoint to initialize database - REMOVE AFTER FIRST USE"""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute('''
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(100) NOT NULL,
+                        email VARCHAR(191) NOT NULL UNIQUE,
+                        password_hash VARCHAR(255) NOT NULL,
+                        created_at DATETIME NOT NULL
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                ''')
+        return jsonify({"message": "Database initialized successfully!", "status": "success"})
+    except Exception as e:
+        return jsonify({"error": str(e), "status": "failed"}), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
