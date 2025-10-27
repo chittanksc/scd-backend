@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: scd-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: DB_HOST
+        generateValue: true
+      - key: DB_USER
+        generateValue: true
+      - key: DB_PASSWORD
+        generateValue: true
+      - key: DB_NAME
+        value: scd
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: MODEL_PATH
+        value: /opt/render/project/src/skin_cancer_cnn.h5
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+databases:
+  - name: scd-db
+    databaseName: scd
+    user: scd_user
+    plan: free

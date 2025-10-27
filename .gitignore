@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# Flask
+instance/
+.webassets-cache
+
+# Environment variables
+.env
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Model files (optional - comment out if you want to include model in repo)
+# skin_cancer_cnn.h5
+# skin_cancer_cnn_best.h5
+
+# Training outputs
+training_history.png
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
