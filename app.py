@@ -76,7 +76,7 @@ def login():
     if not email or not password:
         return jsonify({"error": "Missing fields"}), 400
     with get_db_connection() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("SELECT id, name, email, password_hash FROM users WHERE email=%s", (email,))
             user = cur.fetchone()
             if not user or not check_password_hash(user["password_hash"], password):
@@ -136,27 +136,6 @@ def upload():
     except Exception:
         pass
     return jsonify({"prediction": label, "confidence": confidence})
-
-
-@app.get("/api/setup-db")
-def setup_database():
-    """Temporary endpoint to initialize database - REMOVE AFTER FIRST USE"""
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute('''
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL,
-                        email VARCHAR(191) NOT NULL UNIQUE,
-                        password_hash VARCHAR(255) NOT NULL,
-                        created_at TIMESTAMP NOT NULL
-                    )
-                ''')
-                conn.commit()
-        return jsonify({"message": "Database initialized successfully!", "status": "success"})
-    except Exception as e:
-        return jsonify({"error": str(e), "status": "failed"}), 500
 
 
 if __name__ == "__main__":
