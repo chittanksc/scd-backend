@@ -15,7 +15,7 @@ from emailer import send_result_email
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")}}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
 
 connection_kwargs = {
     "host": app.config.get("DB_HOST", "127.0.0.1"),
@@ -91,12 +91,17 @@ def auth_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         auth_header = request.headers.get("Authorization", "")
+        print(f"Auth header received: {auth_header}")
         if not auth_header.startswith("Bearer "):
+            print("No Bearer token found")
             return jsonify({"error": "Unauthorized"}), 401
         token = auth_header.split(" ", 1)[1]
+        print(f"Token extracted: {token[:20]}...")
         try:
             payload = decode_jwt(token)
-        except Exception:
+            print(f"Token decoded successfully: {payload}")
+        except Exception as e:
+            print(f"Token decode error: {e}")
             return jsonify({"error": "Invalid token"}), 401
         request.user = payload
         return fn(*args, **kwargs)
@@ -113,6 +118,9 @@ def me():
 @app.post("/api/upload")
 @auth_required
 def upload():
+    print(f"Upload request received from {request.remote_addr}")
+    print(f"Content-Type: {request.content_type}")
+    print(f"Authorization: {request.headers.get('Authorization', 'None')}")
     try:
         if "image" not in request.files:
             return jsonify({"error": "No image provided"}), 400
