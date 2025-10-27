@@ -2,7 +2,8 @@ import os
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pymysql
+import psycopg2
+import psycopg2.extras
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from PIL import Image
@@ -20,16 +21,14 @@ connection_kwargs = {
     "host": app.config.get("DB_HOST", "127.0.0.1"),
     "user": app.config.get("DB_USER", "root"),
     "password": app.config.get("DB_PASSWORD", ""),
-    "database": app.config.get("DB_NAME", "scd"),
-    "cursorclass": pymysql.cursors.DictCursor,
-    "autocommit": True,
+    "dbname": app.config.get("DB_NAME", "scd"),
 }
 
 os.makedirs(os.path.join(os.path.dirname(__file__), "uploads"), exist_ok=True)
 
 
 def get_db_connection():
-    return pymysql.connect(**connection_kwargs)
+    return psycopg2.connect(**connection_kwargs)
 
 
 def create_jwt(payload):
@@ -63,7 +62,8 @@ def register():
                     "INSERT INTO users (name, email, password_hash, created_at) VALUES (%s, %s, %s, NOW())",
                     (name, email, password_hash),
                 )
-    except pymysql.err.IntegrityError:
+                conn.commit()
+    except psycopg2.errors.UniqueViolation:
         return jsonify({"error": "Email already registered"}), 409
     return jsonify({"message": "Registered successfully"}), 201
 
@@ -146,13 +146,14 @@ def setup_database():
             with conn.cursor() as cur:
                 cur.execute('''
                     CREATE TABLE IF NOT EXISTS users (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        id SERIAL PRIMARY KEY,
                         name VARCHAR(100) NOT NULL,
                         email VARCHAR(191) NOT NULL UNIQUE,
                         password_hash VARCHAR(255) NOT NULL,
-                        created_at DATETIME NOT NULL
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                        created_at TIMESTAMP NOT NULL
+                    )
                 ''')
+                conn.commit()
         return jsonify({"message": "Database initialized successfully!", "status": "success"})
     except Exception as e:
         return jsonify({"error": str(e), "status": "failed"}), 500
